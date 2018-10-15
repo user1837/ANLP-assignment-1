@@ -16,10 +16,11 @@ def preprocess_line(line):
     Returns the processed line
     """
     line = re.sub(r'\d', '0', line)
-    line = re.sub(r'\n', '', line) # removes newline character at the end of each line
+    line = re.sub(r'\n|\t', '', line) # removes newline character at the end of each line
     line = re.sub(r'[^A-Za-z.\s\d]', '', line)
     line = line.lower()
-    line = '##' + line + '#' # Adds beginning and end of line markers
+    #line = '##' + line + '#' # Adds two beginning markers and one end of line markers
+    line = '#' + line + '#'  # Adds beginning and end of line markers
     return line
 
 def get_all_trigrams():
@@ -88,15 +89,42 @@ def generate_from_LM(distribution):
        distribution: a dictionary representing a probability distribution
        returns the random sequence
     """
-    random_sequence = "#"
-    for i in range(299):
+    random_sequence = get_first_trigram(distribution)
+    while len(random_sequence) < 299:
         bigram = random_sequence[-2:]
         if bigram[-1] == '#':
-            random_sequence = random_sequence + "#" # appends a # to the end of a line so that the string generation
+            random_sequence = random_sequence + "#"  # appends a # to the end of a line so that the string generation
             # starts over on a new line
             bigram = random_sequence[-2:]
         random_sequence = random_sequence + append_char(bigram, distribution)
+    # random_sequence = re.sub(r"##", "\n", random_sequence) # replaces the # with a newline
+    random_sequence = random_sequence + "#"
+    print(len(random_sequence))
     return random_sequence
+    # random_sequence = "#"
+    # for i in range(299):
+    #     bigram = random_sequence[-2:]
+    #     if bigram[-1] == '#':
+    #         random_sequence = random_sequence + "#" # appends a # to the end of a line so that the string generation
+    #         # starts over on a new line
+    #         bigram = random_sequence[-2:]
+    #     random_sequence = random_sequence + append_char(bigram, distribution)
+    # return random_sequence
+
+def get_first_trigram(distribution):
+    """Gets the first trigram for the random sequence
+       distribution: a probability distribution
+       returns the first trigram
+    """
+    probs = []
+    possible_first_trigrams = []
+    for key in distribution.keys():
+        if re.search(r"#[^#]{2}", key):
+            possible_first_trigrams.append(key)
+            probs.append(distribution[key])
+    normalized_probs = normalize_probs(probs)
+    random_trigrams = np.random.choice(possible_first_trigrams, size=None, replace=True, p=normalized_probs)
+    return random_trigrams
 
 def normalize_probs(probs):
     """Normalizes the probabilities so that they sum exactly to 1
