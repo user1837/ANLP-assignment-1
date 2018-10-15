@@ -32,6 +32,7 @@ def get_all_trigrams():
         for l2 in letters:
             for l3 in letters:
                 trigrams[l1+l2+l3]=0
+    del trigrams["###"]
     return trigrams
 
 def calculate_perplexity(model, data):
@@ -89,18 +90,18 @@ def generate_from_LM(distribution):
        distribution: a dictionary representing a probability distribution
        returns the random sequence
     """
-    random_sequence = get_first_trigram(distribution)
+    random_sequence = "#"
     while len(random_sequence) < 299:
-        bigram = random_sequence[-2:]
-        if bigram[-1] == '#':
-            random_sequence = random_sequence + "#"  # appends a # to the end of a line so that the string generation
-            # starts over on a new line
+        if random_sequence[-1] == '#': # starts a new line
+            random_sequence = random_sequence + get_first_trigram(distribution)
+        else: # chooses the next character based on the last two in random_sequence
             bigram = random_sequence[-2:]
-        random_sequence = random_sequence + append_char(bigram, distribution)
+            random_sequence = random_sequence + append_char(bigram, distribution)
     # random_sequence = re.sub(r"##", "\n", random_sequence) # replaces the # with a newline
     random_sequence = random_sequence + "#"
     print(len(random_sequence))
     return random_sequence
+    # old code:
     # random_sequence = "#"
     # for i in range(299):
     #     bigram = random_sequence[-2:]
@@ -112,19 +113,20 @@ def generate_from_LM(distribution):
     # return random_sequence
 
 def get_first_trigram(distribution):
-    """Gets the first trigram for the random sequence
-       distribution: a probability distribution
-       returns the first trigram
+    """Gets the last two characters of the first trigram of each line for the random sequence
+        distribution: a probability distribution
+        returns the last two characters of the first trigram
     """
     probs = []
-    possible_first_trigrams = []
+    possible_chars = []
     for key in distribution.keys():
-        if re.search(r"#[^#]{2}", key):
-            possible_first_trigrams.append(key)
+        if re.search(r"#[^#]{2}", key): # looks for all trigrams beginning with # and followed by two characters that
+            #  aren't a #
+            possible_chars.append(key[1:3])
             probs.append(distribution[key])
     normalized_probs = normalize_probs(probs)
-    random_trigrams = np.random.choice(possible_first_trigrams, size=None, replace=True, p=normalized_probs)
-    return random_trigrams
+    random_trigram = np.random.choice(possible_chars, size=None, replace=True, p=normalized_probs)
+    return random_trigram
 
 def normalize_probs(probs):
     """Normalizes the probabilities so that they sum exactly to 1
