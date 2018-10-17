@@ -88,14 +88,13 @@ def generate_from_LM(distribution):
        returns the random sequence
     """
     random_sequence = "#"
-    while len(random_sequence) < 299:
+    while len(random_sequence) < 300:
         if random_sequence[-1] == '#': # starts a new line
             random_sequence = random_sequence + get_first_trigram(distribution)
         else: # chooses the next character based on the last two in random_sequence
             bigram = random_sequence[-2:]
             random_sequence = random_sequence + append_char(bigram, distribution)
-    random_sequence = random_sequence + "#"
-    print(len(random_sequence))
+    random_sequence = re.sub(r"#", "\n#", random_sequence)  # replaces the # with a newline
     return random_sequence
 
 def get_first_trigram(distribution):
