@@ -16,10 +16,9 @@ def preprocess_line(line):
     Returns the processed line
     """
     line = re.sub(r'\d', '0', line)
-    line = re.sub(r'\n|\t', '', line) # removes newline character at the end of each line
+    line = re.sub(r'\n|\t', '', line) # removes newline characters and tab characters
     line = re.sub(r'[^A-Za-z.\s\d]', '', line)
     line = line.lower()
-    #line = '##' + line + '#' # Adds two beginning markers and one end of line markers
     line = '#' + line + '#'  # Adds beginning and end of line markers
     return line
 
@@ -32,7 +31,6 @@ def get_all_trigrams():
         for l2 in letters:
             for l3 in letters:
                 trigrams[l1+l2+l3]=0
-    del trigrams["###"]
     return trigrams
 
 def calculate_perplexity(model, data):
@@ -41,7 +39,6 @@ def calculate_perplexity(model, data):
        data: the string to compute perplexity for
        Returns the computed perplexity
     """
-# only calculates perplexity on val data using add_alpha_prob from training data
     H_add_alpha = 0
     for i in range(len(data) - 2):
         trigram = data[i:i+3]
@@ -97,20 +94,9 @@ def generate_from_LM(distribution):
         else: # chooses the next character based on the last two in random_sequence
             bigram = random_sequence[-2:]
             random_sequence = random_sequence + append_char(bigram, distribution)
-    # random_sequence = re.sub(r"##", "\n", random_sequence) # replaces the # with a newline
     random_sequence = random_sequence + "#"
     print(len(random_sequence))
     return random_sequence
-    # old code:
-    # random_sequence = "#"
-    # for i in range(299):
-    #     bigram = random_sequence[-2:]
-    #     if bigram[-1] == '#':
-    #         random_sequence = random_sequence + "#" # appends a # to the end of a line so that the string generation
-    #         # starts over on a new line
-    #         bigram = random_sequence[-2:]
-    #     random_sequence = random_sequence + append_char(bigram, distribution)
-    # return random_sequence
 
 def get_first_trigram(distribution):
     """Gets the last two characters of the first trigram of each line for the random sequence
@@ -172,7 +158,8 @@ def get_ng_probabilities(model):
     """Prints all trigrams with history 'ng' and their probabilities for question 3"""
     for key in model:
         if key[0:2] == "ng":
-            print("{0}: {1}".format(key, model[key]))
+            formated_prob = format(model[key], '.3e')
+            print("{0}: ".format(key) + formated_prob)
 
 def run_test(model, test_string):
     """Calculates and prints the perplexity of the test document
@@ -199,7 +186,6 @@ with open(infile) as f:
     bi_counts.clear()
     for line in f:
         line = preprocess_line(line)
-        #print(line)
         for j in range(len(line)-(2)):
             trigram = line[j:j+3]
             bigram = line[j:j+2]
@@ -224,11 +210,10 @@ best_model = calculate_add_alpha_prob(tri_counts, bi_counts, best_alpha)
 get_ng_probabilities(best_model)
 
 # Writes the model probabilities to a file
-with open("model.txt", 'a') as outfile:
+with open("model.txt", 'w') as outfile:
     for key in best_model:
         outfile.write("{}: {}\n".format(key, best_model[key]))
 
-# expected best_alpha for English = 0.15
 
 print(generate_from_LM(best_model)) # generates from our language model for English
 print(generate_from_LM(get_br_en_distribution())) # generates from the model in model-br.en
